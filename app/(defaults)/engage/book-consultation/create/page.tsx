@@ -1,0 +1,581 @@
+'use client';
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Swal from 'sweetalert2';
+import IconArrowBackward from '@/components/icon/icon-arrow-backward';
+import IconPlus from '@/components/icon/icon-plus';
+import IconTrash from '@/components/icon/icon-trash';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import { apiClient } from '@/lib/api-client';
+import { useQuery } from '@tanstack/react-query';
+
+const flattenNavItems = (items: any[], parent = ''): any[] => {
+    let result: any[] = [];
+    items.forEach(item => {
+        const displayName = parent ? `${parent} > ${item.name}` : item.name;
+        result.push({ ...item, displayName });
+        if (item.children && item.children.length > 0) {
+            result = result.concat(flattenNavItems(item.children, displayName));
+        }
+    });
+    return result;
+};
+
+interface BookConsultationFormData {
+    title: string;
+    subHeadline: string;
+    description: {
+        text: string;
+        highlighted: string;
+    };
+    consultationFocusAreas: {
+        benefit: string;
+        description: string;
+    }[];
+    bookingDetails: string[];
+    timings: {
+        text1: string;
+        text2: string;
+    };
+    quote: {
+        text: string;
+        highlighted: string;
+    };
+    cta: {
+        text: string;
+        href: string;
+    }[];
+}
+
+const CreateBookConsultationPage = () => {
+    const router = useRouter();
+    const [loading, setLoading] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [ctaLinkTypes, setCtaLinkTypes] = useState<('navigation' | 'manual')[]>([]);
+    
+    const { data: navigationData } = useQuery({
+        queryKey: ['navigation'],
+        queryFn: async () => {
+            const result = await apiClient.get('/api/navigation');
+            return result.data || [];
+        }
+    });
+
+    const flatNavigationItems = navigationData ? flattenNavItems(navigationData) : [];
+    
+    const [formData, setFormData] = useState<BookConsultationFormData>({
+        title: '',
+        subHeadline: '',
+        description: { text: '', highlighted: '' },
+        consultationFocusAreas: [],
+        bookingDetails: [],
+        timings: { text1: '', text2: '' },
+        quote: { text: '', highlighted: '' },
+        cta: [],
+    });
+
+    const handleInputChange = (field: keyof BookConsultationFormData, value: string) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+        if (errors[field]) {
+            setErrors(prev => ({ ...prev, [field]: '' }));
+        }
+    };
+
+    const handleNestedChange = (parent: string, field: string, value: string) => {
+        setFormData(prev => ({
+            ...prev,
+            [parent]: { ...(prev as any)[parent], [field]: value }
+        }));
+    };
+
+    // Focus Areas Management
+    const addFocusArea = () => {
+        setFormData(prev => ({
+            ...prev,
+            consultationFocusAreas: [...prev.consultationFocusAreas, { benefit: '', description: '' }]
+        }));
+    };
+
+    const removeFocusArea = (index: number) => {
+        setFormData(prev => ({
+            ...prev,
+            consultationFocusAreas: prev.consultationFocusAreas.filter((_, i) => i !== index)
+        }));
+    };
+
+    const handleFocusAreaChange = (index: number, field: string, value: string) => {
+        setFormData(prev => ({
+            ...prev,
+            consultationFocusAreas: prev.consultationFocusAreas.map((area, i) => 
+                i === index ? { ...area, [field]: value } : area
+            )
+        }));
+    };
+
+    // Booking Details Management
+    const addBookingDetail = () => {
+        setFormData(prev => ({
+            ...prev,
+            bookingDetails: [...prev.bookingDetails, '']
+        }));
+    };
+
+    const removeBookingDetail = (index: number) => {
+        setFormData(prev => ({
+            ...prev,
+            bookingDetails: prev.bookingDetails.filter((_, i) => i !== index)
+        }));
+    };
+
+    const handleBookingDetailChange = (index: number, value: string) => {
+        setFormData(prev => ({
+            ...prev,
+            bookingDetails: prev.bookingDetails.map((detail, i) => 
+                i === index ? value : detail
+            )
+        }));
+    };
+
+    // CTA Management
+    const addCTA = () => {
+        setFormData(prev => ({
+            ...prev,
+            cta: [...prev.cta, { text: '', href: '' }]
+        }));
+        setCtaLinkTypes(prev => [...prev, 'navigation']);
+    };
+
+    const removeCTA = (index: number) => {
+        setFormData(prev => ({
+            ...prev,
+            cta: prev.cta.filter((_, i) => i !== index)
+        }));
+        setCtaLinkTypes(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const handleCTAChange = (index: number, field: string, value: string) => {
+        setFormData(prev => ({
+            ...prev,
+            cta: prev.cta.map((cta, i) => 
+                i === index ? { ...cta, [field]: value } : cta
+            )
+        }));
+    };
+
+    const validateForm = () => {
+        const newErrors: Record<string, string> = {};
+
+        if (!formData.title.trim()) {
+            newErrors.title = 'Title is required';
+        }
+
+        if (!formData.subHeadline.trim()) {
+            newErrors.subHeadline = 'Sub-headline is required';
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!validateForm()) {
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            const result = await apiClient.post('/api/engage/book-consultation', formData);
+
+            if (result.success) {
+                Swal.fire({
+                    title: 'Success!',
+                    text: 'Book consultation data created successfully',
+                    icon: 'success',
+                    confirmButtonColor: '#10b981',
+                }).then(() => {
+                    router.push('/engage/book-consultation');
+                });
+            } else {
+                Swal.fire('Error', result.error || 'Failed to create book consultation data', 'error');
+            }
+        } catch (error: any) {
+            console.error('Create error:', error);
+            Swal.fire('Error', error.message || 'Failed to create book consultation data', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <ProtectedRoute requiredPermission={{ resource: 'engage', action: 'edit' }}>
+            <div className="panel">
+                <div className="flex items-center justify-between mb-5">
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => router.push('/engage/book-consultation')}
+                            className="btn btn-outline-primary btn-sm border-green-600 text-green-600 hover:bg-green-600"
+                        >
+                            <IconArrowBackward className="w-4 h-4" />
+                        </button>
+                        <h5 className="font-semibold text-lg dark:text-white-light">Create Book Consultation</h5>
+                    </div>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* Basic Info */}
+                    <div className="panel">
+                        <h6 className="text-lg font-semibold mb-4">Basic Information</h6>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label className="block text-sm font-medium mb-2">Title *</label>
+                                <input
+                                    type="text"
+                                    className="form-input"
+                                    placeholder="Enter title"
+                                    value={formData.title}
+                                    onChange={(e) => handleInputChange('title', e.target.value)}
+                                />
+                                {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium mb-2">Sub-Headline *</label>
+                                <input
+                                    type="text"
+                                    className="form-input"
+                                    placeholder="Enter sub-headline"
+                                    value={formData.subHeadline}
+                                    onChange={(e) => handleInputChange('subHeadline', e.target.value)}
+                                />
+                                {errors.subHeadline && <p className="text-red-500 text-sm mt-1">{errors.subHeadline}</p>}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Description */}
+                    <div className="panel">
+                        <h6 className="text-lg font-semibold mb-4">Description</h6>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label className="block text-sm font-medium mb-2">Description Text</label>
+                                <textarea
+                                    className="form-textarea"
+                                    rows={4}
+                                    placeholder="Enter description"
+                                    value={formData.description.text}
+                                    onChange={(e) => handleNestedChange('description', 'text', e.target.value)}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-2">Highlighted Text</label>
+                                <input
+                                    type="text"
+                                    className="form-input"
+                                    placeholder="Text to highlight"
+                                    value={formData.description.highlighted}
+                                    onChange={(e) => handleNestedChange('description', 'highlighted', e.target.value)}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Timings */}
+                    <div className="panel">
+                        <h6 className="text-lg font-semibold mb-4">Timings</h6>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label className="block text-sm font-medium mb-2">Timing Text 1</label>
+                                <input
+                                    type="text"
+                                    className="form-input"
+                                    placeholder="Enter timing text 1"
+                                    value={formData.timings.text1}
+                                    onChange={(e) => handleNestedChange('timings', 'text1', e.target.value)}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-2">Timing Text 2</label>
+                                <input
+                                    type="text"
+                                    className="form-input"
+                                    placeholder="Enter timing text 2"
+                                    value={formData.timings.text2}
+                                    onChange={(e) => handleNestedChange('timings', 'text2', e.target.value)}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Quote */}
+                    <div className="panel">
+                        <h6 className="text-lg font-semibold mb-4">Quote</h6>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label className="block text-sm font-medium mb-2">Quote Text</label>
+                                <textarea
+                                    className="form-textarea"
+                                    rows={4}
+                                    placeholder="Enter quote text"
+                                    value={formData.quote.text}
+                                    onChange={(e) => handleNestedChange('quote', 'text', e.target.value)}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-2">Highlighted Text</label>
+                                <input
+                                    type="text"
+                                    className="form-input"
+                                    placeholder="Text to highlight in quote"
+                                    value={formData.quote.highlighted}
+                                    onChange={(e) => handleNestedChange('quote', 'highlighted', e.target.value)}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Focus Areas */}
+                    <div className="panel">
+                        <div className="flex items-center justify-between mb-4">
+                            <h6 className="text-lg font-semibold">Consultation Focus Areas</h6>
+                            <button
+                                type="button"
+                                onClick={addFocusArea}
+                                className="btn btn-primary btn-sm bg-green-600 hover:bg-green-700 border-green-600"
+                            >
+                                <IconPlus className="w-4 h-4 mr-1" />
+                                Add Focus Area
+                            </button>
+                        </div>
+
+                        {formData.consultationFocusAreas.map((area, index) => (
+                            <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h6 className="font-medium">Focus Area {index + 1}</h6>
+                                    <button
+                                        type="button"
+                                        onClick={() => removeFocusArea(index)}
+                                        className="btn btn-outline-danger btn-sm"
+                                    >
+                                        <IconTrash className="w-4 h-4" />
+                                    </button>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Benefit</label>
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            placeholder="Enter benefit"
+                                            value={area.benefit}
+                                            onChange={(e) => handleFocusAreaChange(index, 'benefit', e.target.value)}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Description</label>
+                                        <textarea
+                                            className="form-textarea"
+                                            rows={3}
+                                            placeholder="Enter description"
+                                            value={area.description}
+                                            onChange={(e) => handleFocusAreaChange(index, 'description', e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+
+                        {formData.consultationFocusAreas.length === 0 && (
+                            <div className="text-center py-8 text-gray-500">
+                                No focus areas added yet. Click "Add Focus Area" to get started.
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Booking Details */}
+                    <div className="panel">
+                        <div className="flex items-center justify-between mb-4">
+                            <h6 className="text-lg font-semibold">Booking Details</h6>
+                            <button
+                                type="button"
+                                onClick={addBookingDetail}
+                                className="btn btn-primary btn-sm bg-green-600 hover:bg-green-700 border-green-600"
+                            >
+                                <IconPlus className="w-4 h-4 mr-1" />
+                                Add Detail
+                            </button>
+                        </div>
+
+                        {formData.bookingDetails.map((detail, index) => (
+                            <div key={index} className="flex items-center gap-4 mb-4">
+                                <div className="flex-1">
+                                    <input
+                                        type="text"
+                                        className="form-input"
+                                        placeholder="Enter booking detail"
+                                        value={detail}
+                                        onChange={(e) => handleBookingDetailChange(index, e.target.value)}
+                                    />
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => removeBookingDetail(index)}
+                                    className="btn btn-outline-danger btn-sm"
+                                >
+                                    <IconTrash className="w-4 h-4" />
+                                </button>
+                            </div>
+                        ))}
+
+                        {formData.bookingDetails.length === 0 && (
+                            <div className="text-center py-8 text-gray-500">
+                                No booking details added yet. Click "Add Detail" to get started.
+                            </div>
+                        )}
+                    </div>
+
+                    {/* CTA Buttons */}
+                    <div className="panel">
+                        <div className="flex items-center justify-between mb-4">
+                            <h6 className="text-lg font-semibold">Call-to-Action Buttons</h6>
+                            <button
+                                type="button"
+                                onClick={addCTA}
+                                className="btn btn-primary btn-sm bg-green-600 hover:bg-green-700 border-green-600"
+                            >
+                                <IconPlus className="w-4 h-4 mr-1" />
+                                Add CTA
+                            </button>
+                        </div>
+
+                        {formData.cta.map((cta, index) => (
+                            <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h6 className="font-medium">CTA {index + 1}</h6>
+                                    <button
+                                        type="button"
+                                        onClick={() => removeCTA(index)}
+                                        className="btn btn-outline-danger btn-sm"
+                                    >
+                                        <IconTrash className="w-4 h-4" />
+                                    </button>
+                                </div>
+
+                                <div className="grid grid-cols-1 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Button Text</label>
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            placeholder="Enter button text"
+                                            value={cta.text}
+                                            onChange={(e) => handleCTAChange(index, 'text', e.target.value)}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Link Type</label>
+                                        <div className="flex gap-4">
+                                            <label className="flex items-center cursor-pointer">
+                                                <input
+                                                    type="radio"
+                                                    name={`linkType-${index}`}
+                                                    checked={ctaLinkTypes[index] === 'navigation'}
+                                                    onChange={() => {
+                                                        const newTypes = [...ctaLinkTypes];
+                                                        newTypes[index] = 'navigation';
+                                                        setCtaLinkTypes(newTypes);
+                                                        handleCTAChange(index, 'href', '');
+                                                    }}
+                                                    className="form-radio text-green-600"
+                                                />
+                                                <span className="ml-2">Navigation Item</span>
+                                            </label>
+                                            <label className="flex items-center cursor-pointer">
+                                                <input
+                                                    type="radio"
+                                                    name={`linkType-${index}`}
+                                                    checked={ctaLinkTypes[index] === 'manual'}
+                                                    onChange={() => {
+                                                        const newTypes = [...ctaLinkTypes];
+                                                        newTypes[index] = 'manual';
+                                                        setCtaLinkTypes(newTypes);
+                                                        handleCTAChange(index, 'href', '');
+                                                    }}
+                                                    className="form-radio text-green-600"
+                                                />
+                                                <span className="ml-2">Manual URL</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        {ctaLinkTypes[index] === 'navigation' ? (
+                                            <>
+                                                <label className="block text-sm font-medium mb-2">Select Navigation Item</label>
+                                                <select
+                                                    className="form-select"
+                                                    value={cta.href}
+                                                    onChange={(e) => handleCTAChange(index, 'href', e.target.value)}
+                                                >
+                                                    <option value="">Select a navigation item</option>
+                                                    {flatNavigationItems.map((item) => (
+                                                        <option key={item.id} value={item.path}>
+                                                            {item.displayName}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <label className="block text-sm font-medium mb-2">Button Link</label>
+                                                <input
+                                                    type="url"
+                                                    className="form-input"
+                                                    placeholder="https://example.com"
+                                                    value={cta.href}
+                                                    onChange={(e) => handleCTAChange(index, 'href', e.target.value)}
+                                                />
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+
+                        {formData.cta.length === 0 && (
+                            <div className="text-center py-8 text-gray-500">
+                                No CTA buttons added yet. Click "Add CTA" to get started.
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Submit Button */}
+                    <div className="flex gap-4 pt-4">
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="btn btn-primary bg-green-600 hover:bg-green-700 border-green-600"
+                        >
+                            {loading ? 'Creating...' : 'Create Book Consultation'}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => router.push('/engage/book-consultation')}
+                            className="btn btn-outline-secondary"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </ProtectedRoute>
+    );
+};
+
+export default CreateBookConsultationPage;

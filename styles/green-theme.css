@@ -1,0 +1,103 @@
+/* Green Theme Overrides */
+
+/* Primary color overrides */
+:root {
+    --color-primary: #10b981;
+    --color-primary-light: #34d399;
+    --color-primary-dark: #059669;
+}
+
+/* Button overrides */
+.btn-primary {
+    @apply bg-green-600 border-green-600 text-white shadow-[0_10px_20px_-10px_rgba(16,185,129,0.44)] hover:bg-green-700 hover:border-green-700 hover:shadow-[0_10px_20px_-10px_rgba(16,185,129,0.44)];
+}
+
+.btn-outline-primary {
+    @apply border-green-600 text-green-600 hover:bg-green-600 hover:border-green-600 hover:text-white;
+}
+
+/* Form input focus states */
+.form-input:focus {
+    @apply border-green-500 ring-green-500;
+}
+
+.form-select:focus {
+    @apply border-green-500 ring-green-500;
+}
+
+.form-textarea:focus {
+    @apply border-green-500 ring-green-500;
+}
+
+/* Checkbox and radio overrides */
+.form-checkbox:checked {
+    @apply bg-green-600 border-green-600;
+}
+
+.form-radio:checked {
+    @apply bg-green-600 border-green-600;
+}
+
+/* Badge overrides */
+.badge-outline-primary {
+    @apply text-green-600 border-green-600;
+}
+
+/* Link colors */
+.text-primary {
+    @apply text-green-600;
+}
+
+/* DataTable selection */
+.mantine-datatable th {
+    @apply border-green-200;
+}
+
+.mantine-datatable tbody tr:hover {
+    @apply bg-green-50;
+}
+
+/* Loading spinner */
+.border-primary {
+    @apply border-green-600;
+}
+
+/* Success states */
+.badge-outline-success {
+    @apply text-green-600 border-green-600;
+}
+
+/* Gradient backgrounds */
+.bg-gradient-to-r.from-green-500.to-green-600 {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+/* Hover states */
+.hover\:text-primary:hover {
+    @apply text-green-600;
+}
+
+/* Focus states */
+.focus\:ring-primary:focus {
+    @apply ring-green-500;
+}
+
+.focus\:border-primary:focus {
+    @apply border-green-500;
+}
+
+/* Auth page specific styles */
+.auth-container {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+}
+
+.auth-box {
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.dark .auth-box {
+    background: rgba(31, 41, 55, 0.95);
+    border: 1px solid rgba(75, 85, 99, 0.2);
+}

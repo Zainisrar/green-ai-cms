@@ -1,0 +1,129 @@
+/* Custom Quill styles - CSS is now imported in component */
+.ql-editor {
+  min-height: 200px !important;
+  font-family: inherit !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+  cursor: text !important;
+  pointer-events: auto !important;
+}
+
+.ql-toolbar {
+  border-top: 1px solid #ccc !important;
+  border-left: 1px solid #ccc !important;
+  border-right: 1px solid #ccc !important;
+  background: #f8f9fa !important;
+}
+
+.ql-container {
+  border-bottom: 1px solid #ccc !important;
+  border-left: 1px solid #ccc !important;
+  border-right: 1px solid #ccc !important;
+  font-family: inherit !important;
+}
+
+.ql-editor.ql-blank::before {
+  font-style: italic !important;
+  color: #999 !important;
+}
+
+/* Fix dropdown and toolbar interactions */
+.ql-toolbar .ql-picker {
+  position: relative !important;
+}
+
+.ql-toolbar .ql-picker-label {
+  cursor: pointer !important;
+  pointer-events: auto !important;
+  padding: 3px 5px !important;
+  border: 1px solid transparent !important;
+  border-radius: 3px !important;
+}
+
+.ql-toolbar .ql-picker-label:hover {
+  background-color: #e9ecef !important;
+  border-color: #ced4da !important;
+}
+
+.ql-toolbar .ql-picker-options {
+  position: absolute !important;
+  top: 100% !important;
+  left: 0 !important;
+  z-index: 1000 !important;
+  background: white !important;
+  border: 1px solid #ccc !important;
+  border-radius: 4px !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+  min-width: 120px !important;
+  max-height: 200px !important;
+  overflow-y: auto !important;
+}
+
+.ql-toolbar .ql-picker-item {
+  cursor: pointer !important;
+  padding: 5px 10px !important;
+  border-bottom: 1px solid #f0f0f0 !important;
+}
+
+.ql-toolbar .ql-picker-item:hover {
+  background-color: #f8f9fa !important;
+}
+
+.ql-toolbar .ql-picker-item.ql-selected {
+  background-color: #007bff !important;
+  color: white !important;
+}
+
+/* Header styles in editor */
+.ql-editor h1 {
+  font-size: 2em !important;
+  font-weight: bold !important;
+  margin: 0.67em 0 !important;
+}
+
+.ql-editor h2 {
+  font-size: 1.5em !important;
+  font-weight: bold !important;
+  margin: 0.83em 0 !important;
+}
+
+.ql-editor h3 {
+  font-size: 1.17em !important;
+  font-weight: bold !important;
+  margin: 1em 0 !important;
+}
+
+.ql-editor h4 {
+  font-size: 1em !important;
+  font-weight: bold !important;
+  margin: 1.33em 0 !important;
+}
+
+.ql-editor h5 {
+  font-size: 0.83em !important;
+  font-weight: bold !important;
+  margin: 1.67em 0 !important;
+}
+
+.ql-editor h6 {
+  font-size: 0.67em !important;
+  font-weight: bold !important;
+  margin: 2.33em 0 !important;
+}
+
+/* Fix any z-index issues */
+.ql-toolbar,
+.ql-container {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+/* Ensure all toolbar buttons work */
+.ql-toolbar button {
+  cursor: pointer !important;
+  pointer-events: auto !important;
+}
+
+.ql-toolbar button:hover {
+  background-color: #e9ecef !important;
+}
