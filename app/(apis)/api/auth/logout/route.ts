@@ -3,6 +3,7 @@ import { db } from '@/db';
 import { userSessions } from '@/db/schema';
 import { getTokenFromRequest } from '@/lib/jwt';
 import { eq } from 'drizzle-orm';
+import { usesSecureAuthCookie } from '@/lib/auth-cookie';
 
 export async function POST(request: NextRequest) {
     try {
@@ -22,7 +23,7 @@ export async function POST(request: NextRequest) {
         // Clear cookie
         response.cookies.set('auth-token', '', {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: usesSecureAuthCookie(request),
             sameSite: 'strict',
             maxAge: 0
         });

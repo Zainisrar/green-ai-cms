@@ -4,6 +4,7 @@ import { users, roles, userSessions } from '@/db/schema';
 import { verifyPassword } from '@/lib/password';
 import { generateToken } from '@/lib/jwt';
 import { eq } from 'drizzle-orm';
+import { usesSecureAuthCookie } from '@/lib/auth-cookie';
 
 export async function POST(request: NextRequest) {
     try {
@@ -92,7 +93,7 @@ export async function POST(request: NextRequest) {
         // Set HTTP-only cookie
         response.cookies.set('auth-token', token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: usesSecureAuthCookie(request),
             sameSite: 'strict',
             maxAge: 7 * 24 * 60 * 60 // 7 days
         });
